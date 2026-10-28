@@ -1,0 +1,52 @@
+# Tracker digi DQM on raw tracker data: unpack (StrawDigisFromArtdaqFragments,
+# DTC links mapped to panels by the Offline TrkPanelMap text conditions) and
+# fill the Offline/TrackerDQM TrackerDigiDQM client through TrackerDigiDQMOnline.
+#
+#   art -c RunTrackerDigiDQM.fcl -s <raw .art file> -n 1000
+#
+# Replays a file with sending off; on the DQM node set sendHists, address and
+# port, and take digiTag from the node's unpacking (TrigMakeSD in the tracker
+# hit-occupancy job). The `digi` table chooses copies and what is published,
+# never binning (Offline/TrackerDQM/fcl/prolog.fcl); override below this block, e.g.
+#   physics.analyzers.trackerdqm.digi.hists.rules : [ ... ]
+#include "Offline/fcl/standardServices.fcl"
+#include "Offline/DAQ/fcl/prolog.fcl"
+#include "Offline/TrackerDQM/fcl/prolog.fcl"
+
+process_name : TrackerDigiDQM
+
+services : {
+  @table::Services.Core
+  @table::Services.Reco
+  TFileService : { fileName : "trackerDigiDQM.root" }
+}
+
+source : { module_type : RootInput }
+
+physics : {
+  producers : {
+    makeSD : @local::DAQ.producers.makeSD
+  }
+  analyzers : {
+    trackerdqm : {
+      module_type     : TrackerDigiDQMOnline
+      digiTag         : "makeSD"
+      diagLevel       : 1
+      sendHists       : false
+      address         : "localhost"
+      port            : 6000
+      sendIntervalSec : 0.5
+      digi            : @local::TrackerDQM.DigiOnline
+    }
+  }
+  unpack        : [ makeSD ]
+  monitor       : [ trackerdqm ]
+  trigger_paths : [ unpack ]
+  end_paths     : [ monitor ]
+}
+
+services.DbService.purpose  : "EMPTY"
+services.DbService.version  : "v0"
+services.DbService.textFile : [ "Offline/TrackerConditions/data/TrkPanelMap.txt" ]
+services.DbService.verbose  : 0
+services.ProditionsService.trackerPanelMap.useDb : true

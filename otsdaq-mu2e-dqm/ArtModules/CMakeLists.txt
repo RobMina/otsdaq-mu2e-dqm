@@ -209,6 +209,17 @@ ROOT::Gui
 ROOT::RHTTP
 )
 
+cet_build_plugin(TrackerDigiDQMOnline art::module LIBRARIES REG
+art_root_io::TFileService_service
+otsdaq-mu2e::ArtModules
+otsdaq::NetworkUtilities
+Offline::TrackerDQM
+Offline::DQMHelpers
+Offline::RecoDataProducts
+ROOT::Hist
+ROOT::Core
+)
+
 cet_build_plugin(CrvStatusMetrics art::module LIBRARIES REG
 artdaq::DAQdata
 artdaq-utilities::Plugins
