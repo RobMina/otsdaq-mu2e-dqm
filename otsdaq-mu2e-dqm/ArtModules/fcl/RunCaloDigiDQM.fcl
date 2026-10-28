@@ -1,0 +1,47 @@
+# Calorimeter digi DQM on raw calorimeter data: unpack (CaloDigisFromDTCEvents,
+# offline SiPM IDs) and fill the Offline/CaloDQM CaloDigiDQM client through
+# CaloDigiDQMOnline.
+#
+#   art -c RunCaloDigiDQM.fcl -s <raw .art file> -n 1000
+#
+# Replays a file with sending off; on the DQM node set sendHists, address and
+# port. Unpacking is as in PassN Calo/Calo_CRR_pass1.fcl (raw to offline IDs
+# through the Proditions CalDAQMap, default conditions). The `digi` table chooses
+# copies and what is published, never binning (Offline/CaloDQM/fcl/prolog.fcl);
+# override below this block, e.g.
+#   physics.analyzers.calodqm.digi.hists.rules : [ ... ]
+#include "Offline/fcl/standardServices.fcl"
+#include "Offline/DAQ/fcl/prolog.fcl"
+#include "Offline/CaloDQM/fcl/prolog.fcl"
+
+process_name : CaloDigiDQM
+
+services : {
+  @table::Services.Core
+  @table::Services.Reco
+  TFileService : { fileName : "caloDigiDQM.root" }
+}
+
+source : { module_type : RootInput }
+
+physics : {
+  producers : {
+    CaloDigis : @local::DAQ.producers.CaloDigis
+  }
+  analyzers : {
+    calodqm : {
+      module_type     : CaloDigiDQMOnline
+      digiTag         : "CaloDigis"
+      diagLevel       : 1
+      sendHists       : false
+      address         : "localhost"
+      port            : 6000
+      sendIntervalSec : 0.5
+      digi            : @local::CaloDQM.DigiOnline
+    }
+  }
+  unpack        : [ CaloDigis ]
+  monitor       : [ calodqm ]
+  trigger_paths : [ unpack ]
+  end_paths     : [ monitor ]
+}
